@@ -2,7 +2,7 @@
 
 Sistema web per la gestione digitale delle sedute del collegio docenti scolastico. Permette la registrazione delle presenze tramite token monouso, la votazione su proposte all'ordine del giorno e la consultazione dello storico delle sedute.
 
-Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni.
+Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni, dell' ITTS Vito Volterra di San Donà di Piave.
 
 ---
 
