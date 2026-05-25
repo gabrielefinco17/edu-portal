@@ -1,6 +1,6 @@
 services:
   db:
-    build: ./database          # ← usa il Dockerfile in database/
+    build: ./database
     container_name: captive_db
     restart: always
     environment:
@@ -9,9 +9,8 @@ services:
       POSTGRES_DB: captive_portal_db
     volumes:
       - db_data:/var/lib/postgresql/data
-      # Niente mount di schema.sql: lo gestisce già il Dockerfile con COPY
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U utente_captive -d captive_portal_db"]
+      test: ["CMD-SHELL", "pg_isready -U principal -d captive_portal_db"]
       interval: 5s
       timeout: 5s
       retries: 5
