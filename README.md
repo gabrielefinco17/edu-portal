@@ -2,7 +2,7 @@
 
 Sistema web per la gestione digitale delle sedute del collegio docenti scolastico. Permette la registrazione delle presenze tramite token monouso, la votazione su proposte all'ordine del giorno e la consultazione dello storico delle sedute.
 
-Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni, dell' ITTS Vito Volterra di San Donà di Piave.
+Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni, dell'ITTS Vito Volterra di San Donà di Piave.
 
 ---
 
@@ -12,6 +12,7 @@ Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni, dell' I
 - [Architettura del sistema](#architettura-del-sistema)
 - [Struttura del database](#struttura-del-database)
 - [Deploy](#deploy)
+- [Gestione degli account](#gestione-degli-account)
 - [API Reference](#api-reference)
 - [Manuale utente](#manuale-utente)
 - [Logging](#logging)
@@ -63,12 +64,14 @@ Il database `captive_portal` contiene le seguenti tabelle:
 | `participation` | Registrazione delle presenze per seduta                      |
 | `vote`          | Voti espressi dagli utenti sulle proposte                    |
 
+> **Nota:** la tabella `participation` include una colonna `has_exited` (default `FALSE`) riservata a un futuro flusso di check-out esplicito; non è attualmente utilizzata da nessun endpoint.
+
 ### Ruoli PostgreSQL
 
-| Ruolo       | Privilegi                                                           |
-|-------------|---------------------------------------------------------------------|
-| `teacher`   | SELECT su meeting/proposal/account/token; INSERT/UPDATE su participation; INSERT su vote |
-| `principal` | Full privileges su tutte le tabelle e sequenze                      |
+| Ruolo       | Privilegi                                                                  |
+|-------------|----------------------------------------------------------------------------|
+| `teacher`   | SELECT su meeting/proposal/account/token; SELECT+INSERT+UPDATE su participation; SELECT+INSERT su vote |
+| `principal` | Full privileges su tutte le tabelle e sequenze                             |
 
 ### Encoding del voto
 
@@ -78,7 +81,7 @@ Il database `captive_portal` contiene le seguenti tabelle:
 | `1`    | Astenuto    |
 | `2`    | Favorevole  |
 
-Una proposta è **approvata** se ottiene almeno il 50% + 1 dei voti favorevoli.
+Una proposta è **approvata** se ottiene più del 50% di voti favorevoli sul totale dei partecipanti alla seduta (`voti_favorevoli > totale_partecipanti / 2`).
 
 ---
 
@@ -131,6 +134,17 @@ npm run build # build di produzione
 
 Assicurarsi che il frontend punti al backend corretto (tipicamente configurato tramite una variabile d'ambiente o un file `.env` con `VITE_API_URL=http://localhost:8000`).
 
+> **Nota:** il backend attualmente non configura `CORSMiddleware`. Prima di collegare il frontend è necessario aggiungerla in `main.py`:
+> ```python
+> from fastapi.middleware.cors import CORSMiddleware
+> app.add_middleware(
+>     CORSMiddleware,
+>     allow_origins=["http://localhost:5173"],  # adattare al dominio di produzione
+>     allow_methods=["*"],
+>     allow_headers=["*"],
+> )
+> ```
+
 ### Deploy in produzione (linee guida)
 
 Per un deploy in ambiente scolastico si consiglia:
@@ -144,12 +158,41 @@ Per un deploy in ambiente scolastico si consiglia:
 
 ---
 
+## Gestione degli account
+
+Non esiste un endpoint per creare account tramite API. Gli account vanno inseriti **direttamente nel database** prima dell'uso (ad esempio tramite il seed in `schema.sql`, oppure manualmente):
+
+```sql
+INSERT INTO account (email, user_name, user_surname, user_role, department)
+VALUES ('nuovo.docente@school.it', 'Nome', 'Cognome', 'teacher', 'Mathematics');
+```
+
+I valori ammessi per `user_role` sono `'teacher'` e `'principal'`. Il campo `department` può essere `NULL` per i dirigenti.
+
+---
+
 ## API Reference
 
-Tutti gli endpoint richiedono autenticazione tramite token, passato:
-- nell'header `token` (per `POST /login`, `POST /logout`, `POST /meeting`, ecc.)
-- nell'header `Authorization` (per endpoint con metodo GET)
-- nel body JSON (per `POST /vote`)
+### Convenzioni di autenticazione
+
+Tutti gli endpoint richiedono un token valido, passato in modo diverso a seconda dell'endpoint:
+
+| Metodo di invio | Endpoint che lo usano |
+|---|---|
+| Header `token: <codice>` | `POST /logout`, `POST /meeting`, `PUT /meeting`, `POST /proposal`, `PUT /proposal`, `POST /participation` |
+| Header `Authorization: <codice>` | `GET /useremail`, `GET /meeting`, `GET /meeting/{id}/stats`, `GET /meeting/{id}/proposals`, `GET /proposal`, `GET /proposal/{id}`, `GET /proposal/{id}/stats`, `GET /proposal/{id}/votes` |
+| Body JSON campo `token` | `POST /login`, `POST /vote` |
+
+### Codici di errore comuni
+
+| Codice | Significato |
+|--------|-------------|
+| `401`  | Token assente, non valido o scaduto (`NO_AUTH`) |
+| `403`  | Operazione riservata al ruolo `principal` (`FORBIDDEN`) |
+| `404`  | Risorsa non trovata (`NOT_FOUND`) |
+| `500`  | Errore interno del server |
+
+---
 
 ### Autenticazione
 
@@ -170,7 +213,10 @@ Autentica l'utente tramite token monouso e registra automaticamente la sua prese
 }
 ```
 
-**Codici di errore:** `401 NO_AUTH` (token non valido o scaduto)
+**Risposta 401:**
+```json
+{ "login_status": "NO_AUTH" }
+```
 
 ---
 
@@ -182,6 +228,11 @@ Invalida il token impostando `expires_at = NOW()`, impedendo qualsiasi riutilizz
 **Risposta 200:**
 ```json
 { "logout_status": "OK" }
+```
+
+**Risposta 401:**
+```json
+{ "logout_status": "NO_AUTH" }
 ```
 
 ---
@@ -196,6 +247,11 @@ Restituisce l'email dell'utente associato al token.
 { "email": "luca.ferrari@school.it" }
 ```
 
+**Risposta 401:**
+```json
+{ "email": "NO_SUCH_USER" }
+```
+
 ---
 
 ### Sedute (Meeting)
@@ -205,7 +261,18 @@ Restituisce la lista di tutte le sedute. Accessibile a tutti gli utenti autentic
 
 **Header:** `Authorization: <token>`
 
-**Risposta 200:** array di oggetti meeting con `id`, `meeting_date`, `start_time`, `end_time`, `president_email`.
+**Risposta 200:**
+```json
+[
+  {
+    "id": 1,
+    "meeting_date": "2025-01-10",
+    "start_time": "09:00:00",
+    "end_time": "11:00:00",
+    "president_email": "mario.rossi@school.it"
+  }
+]
+```
 
 ---
 
@@ -226,22 +293,46 @@ Crea una nuova seduta.
 
 **Risposta 200:** `{ "create_status": "OK" }`
 
-**Codici di errore:** `401 NO_AUTH`, `403 FORBIDDEN`
-
 ---
 
 #### `PUT /meeting?meeting_id=<id>` *(solo principal)*
-Aggiorna i dati di una seduta esistente.
+Aggiorna tutti i campi di una seduta esistente (aggiornamento completo).
+
+**Header:** `token: <token>`
+
+**Body:** stessa struttura di `POST /meeting`.
+
+**Risposta 200:** `{ "update_status": "OK" }`
+
+**Risposta 404:** `{ "update_status": "NOT_FOUND" }`
 
 ---
 
 #### `GET /meeting/{meeting_id}/stats`
-Restituisce le statistiche di una seduta: data, orari, email presidente e numero di partecipanti.
+Restituisce le statistiche di una seduta.
+
+**Header:** `Authorization: <token>`
+
+**Risposta 200:**
+```json
+{
+  "meeting_id": 1,
+  "date": "2025-01-10",
+  "start_time": "09:00:00",
+  "end_time": "11:00:00",
+  "principal_email": "mario.rossi@school.it",
+  "number_of_participants": 4
+}
+```
 
 ---
 
 #### `GET /meeting/{meeting_id}/proposals`
 Restituisce tutte le proposte di voto associate a una seduta.
+
+**Header:** `Authorization: <token>`
+
+**Risposta 200:** array di oggetti proposal (stessa struttura di `GET /proposal`).
 
 ---
 
@@ -250,10 +341,31 @@ Restituisce tutte le proposte di voto associate a una seduta.
 #### `GET /proposal`
 Restituisce tutte le proposte. Accessibile a tutti gli utenti autenticati.
 
+**Header:** `Authorization: <token>`
+
+**Risposta 200:**
+```json
+[
+  {
+    "id": 1,
+    "title": "Acquisto lavagne digitali",
+    "proposal_description": "Sostituzione dei proiettori con lavagne interattive.",
+    "attachment": "offerta_tecnica.pdf",
+    "meeting_id": 3
+  }
+]
+```
+
 ---
 
 #### `GET /proposal/{proposal_id}`
 Restituisce i dettagli di una singola proposta.
+
+**Header:** `Authorization: <token>`
+
+**Risposta 200:** oggetto proposal con chiavi `proposal_id`, `title`, `proposal_description`, `attachment`, `meeting_id`.
+
+**Risposta 404:** `{ "read_status": "NOT_FOUND" }`
 
 ---
 
@@ -272,22 +384,45 @@ Crea una nuova proposta di voto.
 }
 ```
 
-Il campo `attachment` è il nome/path del file allegato (può essere stringa vuota se assente).
+Il campo `attachment` è il nome/path del file allegato; passare stringa vuota `""` se assente.
+
+**Risposta 200:** `{ "insert_status": "OK" }`
 
 ---
 
 #### `PUT /proposal?proposal_id=<id>` *(solo principal)*
-Aggiorna una proposta esistente.
+Aggiorna tutti i campi di una proposta esistente (aggiornamento completo).
+
+**Header:** `token: <token>`
+
+**Body:** stessa struttura di `POST /proposal`.
+
+**Risposta 200:** `{ "update_status": "OK" }`
+
+**Risposta 404:** `{ "update_status": "NOT_FOUND" }`
 
 ---
 
 #### `GET /proposal/{proposal_id}/stats`
 Restituisce il titolo della proposta e il numero di partecipanti alla seduta correlata.
 
+**Header:** `Authorization: <token>`
+
+**Risposta 200:**
+```json
+{
+  "proposal_id": 1,
+  "title": "Acquisto lavagne digitali",
+  "number_of_participants": 4
+}
+```
+
 ---
 
 #### `GET /proposal/{proposal_id}/votes`
 Restituisce tutti i voti espressi per una proposta.
+
+**Header:** `Authorization: <token>`
 
 **Risposta 200:**
 ```json
@@ -302,7 +437,7 @@ Restituisce tutti i voti espressi per una proposta.
 ### Voti (Vote)
 
 #### `POST /vote`
-Esprime o aggiorna il voto su una proposta. Se l'utente ha già votato, il voto viene sovrascritto (`ON CONFLICT DO UPDATE`).
+Esprime o aggiorna il voto su una proposta. Se l'utente ha già votato, il voto viene sovrascritto (`ON CONFLICT DO UPDATE`). Accessibile a entrambi i ruoli.
 
 **Body:**
 ```json
@@ -316,12 +451,14 @@ Esprime o aggiorna il voto su una proposta. Se l'utente ha già votato, il voto 
 
 `preference`: `0` = contrario, `1` = astenuto, `2` = favorevole.
 
+**Risposta 200:** `{ "vote_status": "OK" }`
+
 ---
 
 ### Presenze (Participation)
 
 #### `POST /participation`
-Registra manualmente la presenza di un utente a una seduta (utile per scenari di provisioning o correzione).
+Registra manualmente la presenza di un utente a una seduta. Accessibile a entrambi i ruoli; è idempotente (un conflitto viene ignorato silenziosamente).
 
 **Header:** `token: <token>`
 
@@ -333,7 +470,9 @@ Registra manualmente la presenza di un utente a una seduta (utile per scenari di
 }
 ```
 
-> La presenza viene registrata automaticamente anche al login — questo endpoint è per usi amministrativi.
+**Risposta 200:** `{ "participation_status": "OK" }`
+
+> La presenza viene registrata automaticamente anche al login — questo endpoint è per usi amministrativi o di correzione.
 
 ---
 
@@ -341,22 +480,15 @@ Registra manualmente la presenza di un utente a una seduta (utile per scenari di
 
 ### Flusso standard per un insegnante (teacher)
 
-1. **Ricezione del token**: prima della seduta, il dirigente/verbalista invia per email istituzionale un token univoco (es. `TOK-A1B2C3`).
+1. **Ricezione del token**: prima della seduta, il dirigente invia per email istituzionale un token univoco (es. `TOK-A1B2C3`).
 
-2. **Accesso al portale**: aprire il portale nel browser. Nella schermata di login, inserire il token ricevuto e premere **Accedi**.
+2. **Accesso al portale**: aprire il portale nel browser. Nella schermata di login, inserire il token e premere **Accedi**.
 
 3. **Registrazione automatica**: il sistema valida il token, verifica che non sia scaduto e registra automaticamente la presenza alla seduta corrente.
 
-4. **Dashboard**: dopo il login viene mostrata la dashboard con:
-   - le proposte di voto attive per la seduta corrente
-   - lo storico delle sedute passate
+4. **Dashboard**: dopo il login viene mostrata la dashboard con le proposte di voto attive e lo storico delle sedute passate.
 
-5. **Votazione**: per ogni proposta visibile, selezionare la propria posizione:
-   - **Favorevole**
-   - **Contrario**
-   - **Astenuto**
-   
-   Premere **Vota** per confermare. Il voto può essere modificato fino alla chiusura della seduta.
+5. **Votazione**: per ogni proposta selezionare la propria posizione (Favorevole / Contrario / Astenuto) e premere **Vota**. Il voto può essere modificato fino alla chiusura della seduta.
 
 6. **Storico**: dalla sezione storico è possibile consultare in sola lettura tutte le sedute passate, le proposte discusse e il loro esito.
 
@@ -364,31 +496,31 @@ Registra manualmente la presenza di un utente a una seduta (utile per scenari di
 
 ---
 
-### Flusso per il dirigente / verbalista (principal)
+### Flusso per il dirigente (principal)
 
-Il dirigente dispone di tutti i privilegi dell'insegnante più le funzionalità di gestione:
+Il dirigente dispone di tutti i privilegi dell'insegnante più le funzionalità di gestione.
 
-#### Provisioning pre-seduta (importazione token)
+#### Provisioning pre-seduta
 
 Prima di ogni seduta è necessario:
 
-1. Generare i token monouso per ogni partecipante (uno per insegnante).
-2. Inserirli nella tabella `token` del database con la corretta associazione `user_email` / `meeting_id` e una scadenza corrispondente alla fine della seduta.
+1. Creare la seduta tramite `POST /meeting`.
+2. Generare i token monouso per ogni partecipante e inserirli nella tabella `token` con la corretta associazione `user_email` / `meeting_id` e una scadenza corrispondente alla fine della seduta.
 3. Inviare i token a ogni insegnante tramite email istituzionale.
 
-Esempio di inserimento manuale:
+Esempio di inserimento manuale di un token:
 ```sql
 INSERT INTO token (code, generated_at, expires_at, user_email, meeting_id)
 VALUES ('TOK-XYZ123', NOW(), '2025-10-15 11:00:00', 'luca.ferrari@school.it', 11);
 ```
 
-#### Gestione sedute
+Vincolo: ogni utente può avere al massimo un token per seduta (`UNIQUE (user_email, meeting_id)`).
 
-Dal portale (o tramite API), il dirigente può:
+#### Gestione sedute
 
 - **Creare una nuova seduta** (`POST /meeting`): specificare data, ora di inizio, ora di fine e email del presidente.
 - **Modificare una seduta esistente** (`PUT /meeting?meeting_id=<id>`).
-- **Consultare le statistiche** di una seduta: numero di partecipanti, orari, presidente.
+- **Consultare le statistiche** di una seduta (`GET /meeting/{id}/stats`): numero di partecipanti, orari, presidente.
 
 #### Gestione proposte
 
@@ -437,10 +569,10 @@ Le operazioni tracciate sono:
 
 ## Note di sicurezza
 
-> Queste note descrivono lo stato attuale del progetto (v0.1 scolastico) e i miglioramenti consigliati per un eventuale deploy in produzione reale.
+> Queste note descrivono lo stato attuale del progetto (v0.1 scolastico) e i miglioramenti consigliati per il deploy in produzione reale.
 
-- **Le password dei ruoli PostgreSQL** (`teacher` / `principal` = `"praga"`) sono hard-coded in `main.py`.
+- **Le password dei ruoli PostgreSQL** (`teacher` / `principal` = `"praga"`) sono hard-coded in `main.py`. In produzione usare variabili d'ambiente o un secrets manager.
+- **CORS non è configurato**: in assenza di `CORSMiddleware`, il browser bloccherà le richieste cross-origin dal frontend. Aggiungere la middleware come indicato nella sezione [Deploy](#deploy) prima di collegare il frontend.
 - **I token** sono stringhe arbitrarie senza firma crittografica. In produzione si consiglia l'uso di token firmati (es. HMAC-SHA256) o JWT.
-- **CORS**: assicurarsi di configurare `CORSMiddleware` in FastAPI per limitare le origini accettate al solo dominio del frontend.
 - **HTTPS**: il portale deve essere servito esclusivamente su HTTPS in un contesto di rete scolastica.
 - Il campo `attachment` in `proposal` memorizza solo il nome/path del file come stringa — la gestione dell'upload effettivo del file non è implementata in questa versione.
