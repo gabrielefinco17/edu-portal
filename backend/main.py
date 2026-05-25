@@ -126,7 +126,7 @@ def login(request: LoginRequest):
         user = check_token(request.token)
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -173,7 +173,7 @@ def logout(token: str = Header(...)):
         user = check_token(token)
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -225,7 +225,7 @@ def create_meeting(request: MeetingCreate, token: str = Header(...)):
     if user:
         if user[1] == "principal":
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -273,7 +273,7 @@ def read_all_meetings(request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -311,7 +311,7 @@ def update_meeting(request: MeetingUpdate, meeting_id: int, token: str = Header(
     if user:
         if user[1] == "principal":
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -362,7 +362,7 @@ def meetings_stats(meeting_id: int, request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -409,7 +409,7 @@ def meeting_proposals(meeting_id: int, request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -456,7 +456,7 @@ def create_proposal(request: ProposalCreate, token: str = Header(...)):
     if user:
         if user[1] == "principal":
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -504,7 +504,7 @@ def read_all_proposals(request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -541,7 +541,7 @@ def read_proposal(proposal_id: int, request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -581,7 +581,7 @@ def update_proposal(request: ProposalUpdate, proposal_id: int, token: str = Head
     if user:
         if user[1] == "principal":
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -632,7 +632,7 @@ def proposals_stats(proposal_id: int, request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -677,7 +677,7 @@ def read_proposal_votes(proposal_id: int, request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -721,7 +721,7 @@ def create_vote(request: VoteCreate):
     user = check_token(request.token)
     if user:
         conn = psycopg2.connect(
-            database="captive_portal",
+            database="captive_portal_db",
             user=user[1],
             password=get_password(user[1]),
             host=host_ip,
@@ -760,7 +760,7 @@ def mark_attendance(request: ParticipationCreate, token: str = Header(...)):
     user = check_token(token)
     if user:
         conn = psycopg2.connect(
-            database="captive_portal",
+            database="captive_portal_db",
             user=user[1],
             password=get_password(user[1]),
             host=host_ip,
@@ -797,7 +797,7 @@ def get_participation(meeting_id: int, user_email: str, request: Request):
         user = check_token(request.headers.get("Authorization"))
         if user:
             conn = psycopg2.connect(
-                database="captive_portal",
+                database="captive_portal_db",
                 user=user[1],
                 password=get_password(user[1]),
                 host=host_ip,
@@ -833,7 +833,7 @@ def exit_participation(request: ParticipationCreate, token: str = Header(...)):
     user = check_token(token)
     if user:
         conn = psycopg2.connect(
-            database="captive_portal",
+            database="captive_portal_db",
             user=user[1],
             password=get_password(user[1]),
             host=host_ip,
@@ -874,7 +874,7 @@ def check_token(tok: str):
     cursor = None
     try:
         conn = psycopg2.connect(
-            database="captive_portal",
+            database="captive_portal_db",
             user="principal",
             password=principal_pass,
             host=host_ip,
