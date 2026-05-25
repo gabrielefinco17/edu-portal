@@ -1,16 +1,19 @@
+version: '3.8'
+
 services:
   db:
-    build: ./database
+    image: postgres:16
     container_name: captive_db
     restart: always
     environment:
-      POSTGRES_USER: principal
-      POSTGRES_PASSWORD: praga
+      POSTGRES_USER: utente_captive
+      POSTGRES_PASSWORD: password_segreta_123
       POSTGRES_DB: captive_portal_db
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U principal -d captive_portal_db"]
+      test: ["CMD-SHELL", "pg_isready -U utente_captive -d captive_portal_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,9 +35,7 @@ services:
     container_name: captive_frontend
     restart: always
     ports:
-      - "80:3000"
-    environment:
-      - BACKEND_URL=http://backend:8000
+      - "80:80"
     depends_on:
       - backend
 
