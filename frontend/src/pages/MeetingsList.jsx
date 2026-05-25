@@ -41,7 +41,8 @@ export default function MeetingsList() {
     try {
       await api.updateSession(editingSession.id, {
         title: editTitle,
-        scheduledAt: new Date(editDate).toISOString()
+        scheduledAt: new Date(editDate).toISOString(),
+        president_email: editingSession.president_email || ''
       });
       setEditingSession(null);
       await fetchSessions();

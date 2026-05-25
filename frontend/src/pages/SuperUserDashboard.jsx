@@ -107,8 +107,14 @@ export default function SuperUserDashboard() {
         <span>{t.common.admin}</span>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <button 
-            onClick={() => navigate('/admin/meetings')} 
+            onClick={() => navigate('/')} 
             style={{ width: 'auto', background: 'transparent', padding: '0 1rem', fontSize: '0.8rem', color: 'var(--accent)' }}
+          >
+            Risultati
+          </button>
+          <button 
+            onClick={() => navigate('/admin/meetings')} 
+            style={{ width: 'auto', background: 'transparent', padding: '0 1rem', fontSize: '0.8rem', color: 'var(--accent)', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
           >
             {t.session.meetingsList}
           </button>

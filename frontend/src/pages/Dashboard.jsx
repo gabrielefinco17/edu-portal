@@ -84,8 +84,18 @@ export default function Dashboard() {
   const [attendanceStats, setAttendanceStats] = useState({ presenti: 0, usciti: 0 });
   const [loading, setLoading] = useState(true);
   const [loadingForms, setLoadingForms] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    const userData = localStorage.getItem('cp_user_data');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        setUser(null);
+      }
+    }
+
     const load = async () => {
       const allSessions = await api.getAllSessions();
       // Only show active or finished sessions to the public
@@ -129,14 +139,47 @@ export default function Dashboard() {
 
   return (
     <div className="container" style={{ justifyContent: 'flex-start', paddingTop: '6vh' }}>
-      {/* Top bar with login button */}
+      {/* Top bar with dynamic navigation */}
       <div className="top-bar">
-        <Link to="/login" className="btn-primary" style={{
-          textDecoration: 'none', display: 'inline-block', padding: '0.6rem 1.5rem',
-          fontSize: '0.85rem', borderRadius: '0.75rem', width: 'auto'
-        }}>
-          {t.login.loginButton}
-        </Link>
+        {user ? (
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              {user.email}
+            </span>
+            {user.role === 'super_user' && (
+              <Link to="/admin" className="btn-primary" style={{
+                textDecoration: 'none', display: 'inline-block', padding: '0.6rem 1.5rem',
+                fontSize: '0.85rem', borderRadius: '0.75rem', width: 'auto', background: 'var(--accent)'
+              }}>
+                Area Amministrazione
+              </Link>
+            )}
+            <Link to="/user" className="btn-primary" style={{
+              textDecoration: 'none', display: 'inline-block', padding: '0.6rem 1.5rem',
+              fontSize: '0.85rem', borderRadius: '0.75rem', width: 'auto'
+            }}>
+              Area Voto
+            </Link>
+            <button 
+              onClick={() => {
+                api.logout();
+              }}
+              className="btn-outline"
+              style={{
+                padding: '0.6rem 1.5rem', fontSize: '0.85rem', borderRadius: '0.75rem', width: 'auto', color: 'var(--danger)', borderColor: 'var(--danger)'
+              }}
+            >
+              Esci
+            </button>
+          </div>
+        ) : (
+          <Link to="/login" className="btn-primary" style={{
+            textDecoration: 'none', display: 'inline-block', padding: '0.6rem 1.5rem',
+            fontSize: '0.85rem', borderRadius: '0.75rem', width: 'auto'
+          }}>
+            {t.login.loginButton}
+          </Link>
+        )}
       </div>
 
       <div style={{ width: '100%', maxWidth: '700px' }}>

@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: captive_db
+    restart: always
+    environment:
+      POSTGRES_USER: utente_captive
+      POSTGRES_PASSWORD: password_segreta_123
+      POSTGRES_DB: captive_portal_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U utente_captive -d captive_portal_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: captive_backend
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      DATABASE_URL: "postgresql://utente_captive:password_segreta_123@db:5432/captive_portal_db"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: captive_frontend
+    restart: always
+    ports:
+      - "80:3000"
+    environment:
+      - BACKEND_URL=http://localhost:3000
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

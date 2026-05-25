@@ -111,17 +111,23 @@ export default function UserDashboard() {
       <div className="top-bar">
         <span>{userEmail}</span>
         <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button 
+            onClick={() => navigate('/')} 
+            style={{ width: 'auto', background: 'transparent', padding: '0 1rem', fontSize: '0.8rem', color: 'var(--accent)' }}
+          >
+            Risultati
+          </button>
           {JSON.parse(localStorage.getItem('cp_user_data'))?.role === 'super_user' && (
             <button 
               onClick={() => navigate('/admin')} 
-              style={{ width: 'auto', background: 'transparent', padding: '0 1rem', fontSize: '0.8rem', color: 'var(--accent)' }}
+              style={{ width: 'auto', background: 'transparent', padding: '0 1rem', fontSize: '0.8rem', color: 'var(--accent)', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
             >
               {t.login.goToAdmin}
             </button>
           )}
           <button 
             onClick={() => api.logout()} 
-            style={{ width: 'auto', background: 'transparent', padding: '0 0 0 1rem', fontSize: '0.8rem', color: 'var(--danger)', borderLeft: JSON.parse(localStorage.getItem('cp_user_data'))?.role === 'super_user' ? '1px solid rgba(255,255,255,0.1)' : 'none' }}
+            style={{ width: 'auto', background: 'transparent', padding: '0 0 0 1rem', fontSize: '0.8rem', color: 'var(--danger)', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
           >
             {t.common.logout}
           </button>

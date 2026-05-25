@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from datetime import datetime
 import os
 import psycopg2
@@ -35,15 +35,15 @@ class UserRead(BaseModel):
 class MeetingCreate(BaseModel):
     meeting_date: str = Field(..., min_length=10)
     start_time: str = Field(..., min_length=8)
-    end_time: str = Field(min_length=8)
+    end_time: Optional[str] = Field(default=None, min_length=8)
     president_email: str = Field(..., max_length=40)
 
 
 class MeetingUpdate(BaseModel):
-    meeting_date: str = Field(min_length=10)
-    start_time: str = Field(min_length=8)
-    end_time: str = Field(min_length=8)
-    president_email: str = Field(max_length=40)
+    meeting_date: Optional[str] = Field(default=None, min_length=10)
+    start_time: Optional[str] = Field(default=None, min_length=8)
+    end_time: Optional[str] = Field(default=None, min_length=8)
+    president_email: Optional[str] = Field(default=None, max_length=40)
 
 
 class ProposalCreate(BaseModel):
@@ -734,7 +734,7 @@ def create_vote(request: VoteCreate):
                     INSERT INTO vote(account_email, proposal_id, preference)
                     VALUES (%s, %s, %s)
                     ON CONFLICT (account_email, proposal_id)
-                    DO UPDATE SET preference = EXCLUDED.preference
+                    DO NOTHING
                 """,
                 [request.account_email, request.proposal_id, request.preference]
             )
@@ -789,6 +789,82 @@ def mark_attendance(request: ParticipationCreate, token: str = Header(...)):
         return JSONResponse(status_code=401, content={"participation_status": "NO_AUTH"})
 
 
+@app.get("/participation")
+def get_participation(meeting_id: int, user_email: str, request: Request):
+    conn = None
+    cursor = None
+    try:
+        user = check_token(request.headers.get("Authorization"))
+        if user:
+            conn = psycopg2.connect(
+                database="captive_portal",
+                user=user[1],
+                password=get_password(user[1]),
+                host=host_ip,
+                port=port
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                    SELECT has_exited FROM participation
+                    WHERE meeting_id = %s AND user_email = %s
+                """,
+                [meeting_id, user_email]
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return {"is_present": False, "has_exited": False}
+            return {"is_present": True, "has_exited": bool(row[0])}
+        else:
+            return JSONResponse(status_code=401, content={"error": "NO_AUTH"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Internal server error: {str(e)}"})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@app.put("/participation")
+def exit_participation(request: ParticipationCreate, token: str = Header(...)):
+    conn = None
+    cursor = None
+    user = check_token(token)
+    if user:
+        conn = psycopg2.connect(
+            database="captive_portal",
+            user=user[1],
+            password=get_password(user[1]),
+            host=host_ip,
+            port=port
+        )
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                    UPDATE participation
+                    SET has_exited = TRUE
+                    WHERE meeting_id = %s AND user_email = %s
+                """,
+                [request.meeting_id, request.user_email]
+            )
+            if cursor.rowcount == 0:
+                cursor.connection.rollback()
+                return JSONResponse(status_code=404, content={"exit_status": "NOT_FOUND"})
+            cursor.connection.commit()
+            log_action(f"EXIT MARKED: meeting={request.meeting_id} user={request.user_email} by={user[0]}")
+            return {"exit_status": "OK"}
+        except Exception:
+            cursor.connection.rollback()
+            return JSONResponse(status_code=500, content={"error": "Internal server error"})
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return JSONResponse(status_code=401, content={"exit_status": "NO_AUTH"})
+
+
 # -----------------------------------------------------------
 # UTILITIES
 # -----------------------------------------------------------
@@ -827,3 +903,4 @@ def check_token(tok: str):
             cursor.close()
         if conn:
             conn.close()
+
