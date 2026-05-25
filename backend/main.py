@@ -84,7 +84,7 @@ class ParticipationCreate(BaseModel):
 
 teacher_pass = "praga"
 principal_pass = "praga"
-host_ip = "127.0.0.1"
+host_ip = os.environ.get("DB_HOST", "127.0.0.1")
 port = 5432
 
 
@@ -903,4 +903,3 @@ def check_token(tok: str):
             cursor.close()
         if conn:
             conn.close()
-

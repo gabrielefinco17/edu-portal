@@ -11,6 +11,7 @@ services:
       POSTGRES_DB: captive_portal_db
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U utente_captive -d captive_portal_db"]
       interval: 5s
@@ -22,9 +23,9 @@ services:
     container_name: captive_backend
     restart: always
     ports:
-      - "5432:5432"
+      - "8000:8000"
     environment:
-      DATABASE_URL: "postgresql://utente_captive:password_segreta_123@db:5432/captive_portal_db"
+      DB_HOST: db
     depends_on:
       db:
         condition: service_healthy
@@ -36,7 +37,7 @@ services:
     ports:
       - "80:3000"
     environment:
-      - BACKEND_URL=http://localhost:3000
+      - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
 
