@@ -34,16 +34,16 @@ Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni, dell' I
 
 ```
 ┌─────────────────┐        HTTP/JSON        ┌─────────────────┐
-│  Frontend        │ ──────────────────────▶ │  FastAPI Backend │
-│  React + Vite    │                         │  main.py         │
-│  (porta 5173)    │ ◀────────────────────── │  (porta 8000)    │
+│  Frontend       │ ──────────────────────▶ │ FastAPI Backend │
+│  React + Vite   │                         │ main.py         │
+│  (porta 5173)   │ ◀────────────────────── │ (porta 8000)    │
 └─────────────────┘                         └────────┬────────┘
-                                                      │ psycopg2
-                                             ┌────────▼────────┐
-                                             │   PostgreSQL     │
-                                             │  captive_portal  │
-                                             │  (porta 5432)    │
-                                             └─────────────────┘
+                                                     │ psycopg2
+                                            ┌────────▼────────┐
+                                            │   PostgreSQL    │
+                                            │  captive_portal │
+                                            │  (porta 5432)   │
+                                            └─────────────────┘
 ```
 
 Il backend si connette a PostgreSQL usando **ruoli distinti per livello di accesso** (`teacher` e `principal`), impersonando il ruolo dell'utente autenticato per ogni connessione. L'autenticazione avviene esclusivamente tramite token monouso.
