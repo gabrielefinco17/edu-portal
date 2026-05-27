@@ -4,6 +4,8 @@ Sistema web per la gestione digitale delle sedute del collegio docenti scolastic
 
 Progetto sviluppato dalla classe 5D — Informatica e Telecomunicazioni, dell'ITTS Vito Volterra di San Donà di Piave.
 
+👉 Per il manuale d'uso, consulta il file [ManualeUtente.md](./ManualeUtente.md).
+
 ---
 
 ## Indice
