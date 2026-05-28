@@ -39,6 +39,10 @@ export default function SuperUserDashboard() {
 
   const handleCreateSession = async (e) => {
     e.preventDefault();
+    if (sessionDate && new Date(sessionDate) < new Date()) {
+      setMessage({ type: 'error', text: 'Non è possibile creare una seduta in una data e ora passate.' });
+      return;
+    }
     setActionLoading(true);
     try {
       const newSession = await api.createSession(sessionTitle, sessionDate || null);
@@ -175,6 +179,7 @@ export default function SuperUserDashboard() {
                   type="datetime-local"
                   value={sessionDate}
                   onChange={(e) => setSessionDate(e.target.value)}
+                  min={(() => { const n = new Date(); const p = x => String(x).padStart(2,'0'); return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}T${p(n.getHours())}:${p(n.getMinutes())}`; })()}
                 />
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Lascia vuoto per iniziare subito la seduta.</p>
               </div>
@@ -185,7 +190,7 @@ export default function SuperUserDashboard() {
           </div>
         ) : (
           <div className="fade-in">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: '700', textTransform: 'uppercase' }}>
                   {t.session.activeLabel}

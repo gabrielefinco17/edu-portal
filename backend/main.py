@@ -82,8 +82,8 @@ class ParticipationCreate(BaseModel):
 # CONFIG
 # -----------------------------------------------------------
 
-teacher_pass = "praga"
-principal_pass = "praga"
+teacher_pass = os.environ.get("TEACHER_PASS")
+principal_pass = os.environ.get("PRINCIPAL_PASS")
 host_ip = os.environ.get("DB_HOST", "127.0.0.1")
 port = 5432
 

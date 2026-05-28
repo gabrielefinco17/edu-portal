@@ -53,6 +53,12 @@ export default function MeetingsList() {
     }
   };
 
+  const formatDateIT = (dateStr) => {
+    const d = new Date(dateStr);
+    const p = n => String(n).padStart(2, '0');
+    return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'var(--success)';
@@ -158,9 +164,9 @@ export default function MeetingsList() {
                     <h3 style={{ fontSize: '1.1rem' }}>{s.title}</h3>
                   </div>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {s.status === 'finished' 
-                      ? `${t.session.finishedOn} ${new Date(s.createdAt).toLocaleString()}`
-                      : `${t.session.scheduledFor} ${new Date(s.scheduledAt).toLocaleString()}`
+                    {s.status === 'finished'
+                      ? `${t.session.finishedOn} ${formatDateIT(s.createdAt)}`
+                      : `${t.session.scheduledFor} ${formatDateIT(s.scheduledAt)}`
                     }
                   </p>
                   <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.5 }}>

@@ -6,9 +6,9 @@ services:
     container_name: captive_db
     restart: always
     environment:
-      POSTGRES_USER: utente_captive
-      POSTGRES_PASSWORD: password_segreta_123
-      POSTGRES_DB: captive_portal_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
@@ -25,7 +25,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_HOST: db
+      DB_HOST: ${DB_HOST}
+      TEACHER_PASS: ${TEACHER_PASS}
+      PRINCIPAL_PASS: ${PRINCIPAL_PASS}
     depends_on:
       db:
         condition: service_healthy
