@@ -2,6 +2,12 @@ import t from '../i18n/IT.json';
 
 const BASE_URL = '';
 
+// Converte 'YYYY-MM-DD' in 'DD/MM/YYYY'
+const formatDateDMY = (isoDate) => {
+  const [yyyy, mm, dd] = isoDate.split('-');
+  return `${dd}/${mm}/${yyyy}`;
+};
+
 // For GET endpoints: backend reads Authorization header raw value via request.headers.get("Authorization")
 const getAuthHeaders = () => ({
   'Authorization': localStorage.getItem('cp_token') || ''
@@ -181,7 +187,7 @@ export const api = {
 
     return data.map(meeting => ({
       id: meeting.id,
-      title: `Collegio Docenti - ${meeting.meeting_date}`,
+      title: `Collegio Docenti - ${formatDateDMY(meeting.meeting_date)}`,
       date: meeting.meeting_date,
       createdAt: `${meeting.meeting_date}T${meeting.start_time}`,
       scheduledAt: `${meeting.meeting_date}T${meeting.start_time}`,

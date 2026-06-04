@@ -56,7 +56,7 @@ export default function MeetingsList() {
   const formatDateIT = (dateStr) => {
     const d = new Date(dateStr);
     const p = n => String(n).padStart(2, '0');
-    return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
   };
 
   const getStatusColor = (status) => {

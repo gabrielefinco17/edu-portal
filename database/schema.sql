@@ -208,13 +208,13 @@ INSERT INTO token (code, generated_at, expires_at, user_email, meeting_id) VALUE
 ('TOK-K2L3M4', '2025-04-24 09:00:00', '2026-09-25 13:00:00', 'giorgio.costa@school.it',   6),
 ('TOK-N5O6P7', '2025-05-05 08:00:00', '2026-09-06 11:00:00', 'luca.ferrari@school.it',    7),
 ('TOK-Q8R9S1', '2025-05-20 13:00:00', '2026-09-21 17:00:00', 'anna.conti@school.it',      8),
-('TOK-PRINCIPAL-TEST', NOW(), NOW() + INTERVAL '60 days', 'mario.rossi@school.it', 11),
-('TOK-TEACHER-LOGIN', NOW(), NOW() + INTERVAL '60 days', 'giorgio.costa@school.it', 11),
-('TOK-LOGOUT-TEST', NOW(), NOW() + INTERVAL '60 days', 'elena.ricci@school.it', 11),
-('TOK-PRINCIPAL-TEST2', NOW(), NOW() + INTERVAL '60 days', 'giulia.bianchi@school.it', 12),
-('TOK-PRINCIPAL-TEST3', NOW(), NOW() + INTERVAL '60 days', 'mario.rossi@school.it',    13),
-('TOK-PRINCIPAL-TEST4', NOW(), NOW() + INTERVAL '60 days', 'giulia.bianchi@school.it', 14),
-('TOK-PRINCIPAL-TEST5', NOW(), NOW() + INTERVAL '60 days', 'mario.rossi@school.it',    15);
+('TOK-PRINCIPAL-TEST',  NOW(), NOW() + INTERVAL '60 days', 'mario.rossi@school.it',     11),
+('TOK-TEACHER-LOGIN',   NOW(), NOW() + INTERVAL '60 days', 'giorgio.costa@school.it',   11),
+('TOK-LOGOUT-TEST',     NOW(), NOW() + INTERVAL '60 days', 'elena.ricci@school.it',     11),
+('TOK-PRINCIPAL-TEST2', NOW(), NOW() + INTERVAL '60 days', 'giulia.bianchi@school.it',  12),
+('TOK-PRINCIPAL-TEST3', NOW(), NOW() + INTERVAL '60 days', 'mario.rossi@school.it',     13),
+('TOK-PRINCIPAL-TEST4', NOW(), NOW() + INTERVAL '60 days', 'giulia.bianchi@school.it',  14),
+('TOK-PRINCIPAL-TEST5', NOW(), NOW() + INTERVAL '60 days', 'mario.rossi@school.it',     15);
 
 
 -- =============================== PARTICIPATION ===============================
